@@ -1,5 +1,7 @@
 import { setupDefaultViewer } from 'neuroglancer';
 import React from 'react';
+import PropTypes from 'prop-types';
+
 export default class Neuroglancer extends React.Component {
   constructor(props) {
     super(props);
@@ -7,6 +9,7 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidMount() {
+    const { perspectiveZoom } = this.props;
     const viewer = setupDefaultViewer();
     viewer.state.restoreState({
       layers: {
@@ -15,7 +18,7 @@ export default class Neuroglancer extends React.Component {
           source: 'dvid://http://emdata3:8600/a89eb3af216a46cdba81204d8f954786/grayscalejpeg',
         },
       },
-      perspectiveZoom: 80,
+      perspectiveZoom,
       navigation: {
         zoomFactor: 8,
       },
@@ -25,10 +28,19 @@ export default class Neuroglancer extends React.Component {
   }
 
   render() {
+    const { perspectiveZoom } = this.props;
     return (
       <div id="neuroglancer-container" ref={this.ngContainer}>
-        Neuroglancer here.
+        <p>Neuroglancer here with zoom { perspectiveZoom }</p>
       </div>
     );
   }
 }
+
+Neuroglancer.propTypes = {
+  perspectiveZoom: PropTypes.number,
+};
+
+Neuroglancer.defaultProps = {
+  perspectiveZoom: 20,
+};
