@@ -1,0 +1,45 @@
+{
+  "name": "neuroglancer-react",
+  "version": "1.0.0",
+  "description": "React component wrapping neuroglancer",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "NODE_ENV=production babel src -d lib --source-maps-inline",
+    "dev": "webpack-dev-server --mode development --open"
+  },
+  "babel": {
+    "presets": [
+      "env"
+    ]
+  },
+  "author": "Jody Clements",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^8.2.6",
+    "babel-loader": "^7.1.5",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1",
+    "eslint": "^5.4.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.1",
+    "eslint-plugin-react": "^7.11.1",
+    "webpack": "^4.16.4",
+    "webpack-bundle-analyzer": "^2.13.1",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5"
+  },
+  "node": {
+    "fs": "empty"
+  },
+  "dependencies": {
+    "neuroglancer": "file:../neuroglancer"
+  },
+  "peerDependencies": {
+    "react": "^15.3.0 || ^16.0.0",
+    "react-dom": "^15.3.0 || ^16.0.0"
+  }
+}

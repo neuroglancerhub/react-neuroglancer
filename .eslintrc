@@ -1,0 +1,13 @@
+{
+  "extends": "airbnb",
+  "parser": "babel-eslint",
+  "rules": {
+    "max-len": [0, 140, 2, {ignoreComments: true}],
+    "react/forbid-prop-types": [1, {"forbid": ['any','array']}],
+    "react/prefer-stateless-function": [0, {}],
+  },
+  "env": {
+    'commonjs': true,
+    'browser': true,
+  }
+}
