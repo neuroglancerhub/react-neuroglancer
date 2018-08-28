@@ -36,7 +36,7 @@
     "fs": "empty"
   },
   "dependencies": {
-    "neuroglancer": "file:../neuroglancer"
+    "neuroglancer": "file:../janelia-neuroglancer"
   },
   "peerDependencies": {
     "react": "^15.3.0 || ^16.0.0",

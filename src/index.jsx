@@ -9,21 +9,31 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidMount() {
-    const { perspectiveZoom } = this.props;
+    const { perspectiveZoom, viewerState } = this.props;
     const viewer = setupDefaultViewer();
-    viewer.state.restoreState({
-      layers: {
-        grayscale: {
-          type: 'image',
-          source: 'dvid://http://emdata3:8600/a89eb3af216a46cdba81204d8f954786/grayscalejpeg',
-        },
-      },
-      perspectiveZoom,
-      navigation: {
-        zoomFactor: 8,
-      },
-    });
 
+    if (viewerState) {
+      viewer.state.restoreState(viewerState);
+    } else {
+      viewer.state.restoreState({
+        layers: {
+          grayscale: {
+            type: 'image',
+            source: 'dvid://http://emdata3:8600/a89eb3af216a46cdba81204d8f954786/grayscalejpeg',
+          },
+          segmentation: {
+            type: 'segmentation',
+            source: 'dvid://http://emdata3:8900/a776af0b132f44c3a428fe7607ba0da0/segmentation',
+          },
+        },
+        perspectiveZoom,
+        navigation: {
+          zoomFactor: 8,
+        },
+      });
+    }
+
+    // TODO: This is purely for debugging and we need to remove it.
     window.viewer = viewer;
   }
 
@@ -39,8 +49,10 @@ export default class Neuroglancer extends React.Component {
 
 Neuroglancer.propTypes = {
   perspectiveZoom: PropTypes.number,
+  viewerState: PropTypes.object,
 };
 
 Neuroglancer.defaultProps = {
   perspectiveZoom: 20,
+  viewerState: null,
 };
