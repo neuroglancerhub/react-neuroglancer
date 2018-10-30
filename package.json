@@ -1,11 +1,11 @@
 {
-  "name": "neuroglancer-react",
-  "version": "1.0.0",
+  "name": "@janelia-flyem/react-neuroglancer",
+  "version": "1.0.1",
   "description": "React component wrapping neuroglancer",
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "NODE_ENV=production babel src -d lib --source-maps-inline",
+    "build": "NODE_ENV=production babel src -d lib",
     "dev": "webpack-dev-server --mode development --open"
   },
   "babel": {
@@ -36,11 +36,14 @@
     "fs": "empty"
   },
   "dependencies": {
-    "neuroglancer": "file:../janelia-neuroglancer"
+    "@janelia-flyem/neuroglancer": "0.0.0-beta.1",
+    "eslint-config-react-app": "^3.0.3",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2"
   },
   "peerDependencies": {
-    "react": "^15.3.0 || ^16.0.0",
-    "react-dom": "^15.3.0 || ^16.0.0",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
     "prop-types": "^15.6.2"
   }
 }

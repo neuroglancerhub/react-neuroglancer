@@ -1,4 +1,4 @@
-import { setupDefaultViewer } from 'neuroglancer';
+import { setupDefaultViewer } from '@janelia-flyem/neuroglancer';
 import React from 'react';
 import PropTypes from 'prop-types';
 

@@ -8,7 +8,7 @@ module.exports = {
   mode: 'development',
   devtool: shouldUseSourceMap ? 'inline-source-map' : false,
   devServer: {
-    contentBase: './dist'
+    contentBase: './lib'
   },
   resolve: {
     extensions: ['*', '.js', '.jsx']
