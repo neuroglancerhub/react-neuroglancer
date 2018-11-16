@@ -6,16 +6,17 @@ export default class Neuroglancer extends React.Component {
   constructor(props) {
     super(props);
     this.ngContainer = React.createRef();
+    this.viewer = null;
   }
 
   componentDidMount() {
     const { perspectiveZoom, viewerState } = this.props;
-    const viewer = setupDefaultViewer();
+    this.viewer = setupDefaultViewer();
 
     if (viewerState) {
-      viewer.state.restoreState(viewerState);
+      this.viewer.state.restoreState(viewerState);
     } else {
-      viewer.state.restoreState({
+      this.viewer.state.restoreState({
         layers: {
           grayscale: {
             type: 'image',
@@ -34,7 +35,12 @@ export default class Neuroglancer extends React.Component {
     }
 
     // TODO: This is purely for debugging and we need to remove it.
-    window.viewer = viewer;
+    window.viewer = this.viewer;
+  }
+
+  componentDidUpdate() {
+    const { viewerState } = this.props;
+    this.viewer.state.restoreState(viewerState);
   }
 
   render() {
