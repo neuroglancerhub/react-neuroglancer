@@ -31,7 +31,7 @@
     "fs": "empty"
   },
   "dependencies": {
-    "@janelia-flyem/neuroglancer": "^0.1.1",
+    "@janelia-flyem/neuroglancer": "^0.1.2",
     "react": "^16.5.2",
     "react-dom": "^16.5.2"
   },
