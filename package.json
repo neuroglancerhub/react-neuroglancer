@@ -4,40 +4,34 @@
   "description": "React component wrapping neuroglancer",
   "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build": "NODE_ENV=production babel src -d lib",
     "dev": "webpack-dev-server --mode development --open"
   },
   "babel": {
     "presets": [
-      "env"
+      "@babel/preset-env",
+      "@babel/preset-react"
     ]
   },
   "author": "Jody Clements",
   "license": "MIT",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.3",
-    "babel-eslint": "^8.2.6",
-    "babel-loader": "^7.1.5",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-react": "^6.24.1",
-    "eslint": "^5.4.0",
-    "eslint-config-airbnb": "^17.1.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-jsx-a11y": "^6.1.1",
-    "eslint-plugin-react": "^7.11.1",
-    "webpack": "^4.16.4",
-    "webpack-bundle-analyzer": "^2.13.1",
-    "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.5"
+    "@babel/cli": "^7.4.3",
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "@babel/preset-react": "^7.0.0",
+    "babel-jest": "^24.7.0",
+    "jest": "^24.7.0",
+    "react-test-renderer": "^16.8.6",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0"
   },
   "node": {
     "fs": "empty"
   },
   "dependencies": {
-    "@janelia-flyem/neuroglancer": "0.0.0-beta.1",
-    "eslint-config-react-app": "^3.0.3",
+    "@janelia-flyem/neuroglancer": "^0.1.1",
     "react": "^16.5.2",
     "react-dom": "^16.5.2"
   },
