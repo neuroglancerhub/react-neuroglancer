@@ -20,11 +20,11 @@ export default class Neuroglancer extends React.Component {
         layers: {
           grayscale: {
             type: 'image',
-            source: 'dvid://http://emdata3:8600/a89eb3af216a46cdba81204d8f954786/grayscalejpeg',
+            source: 'dvid://https://flyem.dvid.io/ab6e610d4fe140aba0e030645a1d7229/grayscalejpeg',
           },
           segmentation: {
             type: 'segmentation',
-            source: 'dvid://http://emdata3:8900/a776af0b132f44c3a428fe7607ba0da0/segmentation',
+            source: 'dvid://https://flyem.dvid.io/d925633ed0974da78e2bb5cf38d01f4d/segmentation',
           },
         },
         perspectiveZoom,
