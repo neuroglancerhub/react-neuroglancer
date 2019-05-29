@@ -10,8 +10,10 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidMount() {
-    const { perspectiveZoom, viewerState } = this.props;
-    this.viewer = setupDefaultViewer();
+    const { perspectiveZoom, viewerState, brainMapsClientId } = this.props;
+    this.viewer = setupDefaultViewer({
+      BrainMapsClientId: brainMapsClientId,
+    });
 
     if (viewerState) {
       this.viewer.state.restoreState(viewerState);
