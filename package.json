@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "build": "NODE_ENV=production babel src -d lib",
+    "build-watch": "NODE_ENV=production babel src --watch --verbose -d lib",
     "dev": "webpack-dev-server --mode development --open"
   },
   "babel": {
