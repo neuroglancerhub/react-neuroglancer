@@ -39,6 +39,9 @@ export default class Neuroglancer extends React.Component {
       });
     }
 
+    // TODO: function here should be used to pass the current viewer state to
+    // the global store, whether that be redux or something else. 
+
     // TODO: This is purely for debugging and we need to remove it.
     window.viewer = this.viewer;
   }
