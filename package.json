@@ -6,8 +6,7 @@
   "scripts": {
     "test": "jest",
     "build": "NODE_ENV=production babel src -d lib",
-    "build-watch": "NODE_ENV=production babel src --watch --verbose -d lib",
-    "dev": "webpack-dev-server --mode development --open"
+    "dev": "NODE_ENV=development babel src -watch --verbose -d lib"
   },
   "babel": {
     "presets": [
@@ -36,9 +35,7 @@
     "fs": "empty"
   },
   "dependencies": {
-    "@janelia-flyem/neuroglancer": "^0.3.0",
-    "react": "^16.5.2",
-    "react-dom": "^16.5.2"
+    "@janelia-flyem/neuroglancer": "^0.4.0"
   },
   "peerDependencies": {
     "react": "^16.5.2",
