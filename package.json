@@ -1,6 +1,6 @@
 {
   "name": "@janelia-flyem/react-neuroglancer",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "React component wrapping neuroglancer",
   "main": "lib/index.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "fs": "empty"
   },
   "dependencies": {
-    "@janelia-flyem/neuroglancer": "^0.4.0"
+    "@janelia-flyem/neuroglancer": "^0.4.2"
   },
   "peerDependencies": {
     "react": "^16.5.2",
