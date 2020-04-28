@@ -3,6 +3,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { SegmentationUserLayer } from '@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer';
 
+let viewersKeyed = {};
+let viewerNoKey = undefined;
+
+export function getNeuroglancerViewerState(key) {
+  const v = key ? viewersKeyed[key] : viewerNoKey;
+  return (v ? v.state.toJSON() : {});
+}
+
 export default class Neuroglancer extends React.Component {
   constructor(props) {
     super(props);
@@ -41,8 +49,15 @@ export default class Neuroglancer extends React.Component {
       });
     }
 
-    // TODO: function here should be used to pass the current viewer state to
-    // the global store, whether that be redux or something else.
+    // Make the Neuroglancer viewer accessible from getNeuroglancerViewerState().
+    // That function can be used to synchronize an external Redux store with any
+    // state changes made internally by the viewer.
+    const { key } = this.props;
+    if (key) {
+      viewersKeyed[key] = this.viewer;
+    } else {
+      viewerNoKey = this.viewer;
+    }
 
     // TODO: This is purely for debugging and we need to remove it.
     window.viewer = this.viewer;
@@ -62,6 +77,15 @@ export default class Neuroglancer extends React.Component {
         <p>Neuroglancer here with zoom { perspectiveZoom }</p>
       </div>
     );
+  }
+
+  componentWillUnmount() {
+    const { key } = this.props;
+    if (key) {
+      delete viewersKeyed[key];
+    } else {
+      viewerNoKey = undefined;
+    }
   }
 
   layersChanged = () => {
