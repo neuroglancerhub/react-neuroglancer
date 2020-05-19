@@ -196,7 +196,7 @@ Neuroglancer.propTypes = {
   viewerState: PropTypes.object,
 
   /**
-   * An array of event bindings to change in Neuroglancer.  The array format is follows:
+   * An array of event bindings to change in Neuroglancer.  The array format is as follows:
    * [[old-event1, new-event1], [old-event2], old-event3]
    * Here, `old-event1`'s will be unbound and its action will be re-bound to `new-event1`.
    * The bindings for `old-event2` and `old-event3` will be removed.
