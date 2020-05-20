@@ -19,12 +19,16 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidMount() {
-    const { perspectiveZoom, viewerState, brainMapsClientId } = this.props;
+    const { perspectiveZoom, viewerState, brainMapsClientId, eventBindingsToUpdate } = this.props;
     this.viewer = setupDefaultViewer({
       brainMapsClientId,
       target: this.ngContainer.current,
       bundleRoot: '/'
     });
+
+    if (eventBindingsToUpdate) {
+      this.updateEventBindings(eventBindingsToUpdate);
+    }
 
     this.viewer.layerManager.layersChanged.add(this.layersChanged);
 
@@ -86,6 +90,43 @@ export default class Neuroglancer extends React.Component {
     } else {
       viewerNoKey = undefined;
     }
+  }
+
+  updateEventBindings = (eventBindingsToUpdate) => {
+    const root = this.viewer.inputEventBindings;
+
+    const traverse = (current) => {
+      const replace = (eaMap, event0, event1) => {
+        const action = eaMap.get(event0);
+        if (action) {
+          eaMap.delete(event0);
+          if (event1) {
+            eaMap.set(event1, action);
+          }
+        }
+      }
+
+      const eventActionMap = current.bindings;
+      eventBindingsToUpdate.forEach((oldNewBinding) => {
+        const eventOldBase = Array.isArray(oldNewBinding) ? oldNewBinding[0] : oldNewBinding;
+
+        const eventOldA = `at:${eventOldBase}`;
+        const eventNewA = oldNewBinding[1] ? `at:${oldNewBinding[1]}` : undefined;
+        replace(eventActionMap, eventOldA, eventNewA);
+
+        const eventOldB = `bubble:${eventOldBase}`;
+        const eventNewB = oldNewBinding[1] ? `bubble:${oldNewBinding[1]}` : undefined;
+        replace(eventActionMap, eventOldB, eventNewB);
+      });
+
+      current.parents.forEach((parent) => {
+        traverse(parent);
+      })
+    }
+
+    traverse(root.global);
+    traverse(root.perspectiveView);
+    traverse(root.sliceView);
   }
 
   layersChanged = () => {
@@ -153,6 +194,17 @@ export default class Neuroglancer extends React.Component {
 Neuroglancer.propTypes = {
   perspectiveZoom: PropTypes.number,
   viewerState: PropTypes.object,
+
+  /**
+   * An array of event bindings to change in Neuroglancer.  The array format is as follows:
+   * [[old-event1, new-event1], [old-event2], old-event3]
+   * Here, `old-event1`'s will be unbound and its action will be re-bound to `new-event1`.
+   * The bindings for `old-event2` and `old-event3` will be removed.
+   * Neuroglancer has its own syntax for event descriptors, and here are some examples:
+   * 'keya', 'shift+keyb' 'control+keyc', 'digit4', 'space', 'arrowleft', 'comma', 'period',
+   * 'minus', 'equal', 'bracketleft'.
+   */
+  eventBindingsToUpdate: PropTypes.array,
 
   /**
    * A function of the form `(segment, layer) => {}`, called each time there is a change to
