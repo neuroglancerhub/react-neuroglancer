@@ -3,6 +3,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { SegmentationUserLayer } from '@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer';
 
+let viewersKeyed = {};
+let viewerNoKey = undefined;
+
+export function getNeuroglancerViewerState(key) {
+  const v = key ? viewersKeyed[key] : viewerNoKey;
+  return (v ? v.state.toJSON() : {});
+}
+
 export default class Neuroglancer extends React.Component {
   constructor(props) {
     super(props);
@@ -11,12 +19,16 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidMount() {
-    const { perspectiveZoom, viewerState, brainMapsClientId } = this.props;
+    const { perspectiveZoom, viewerState, brainMapsClientId, eventBindingsToUpdate } = this.props;
     this.viewer = setupDefaultViewer({
       brainMapsClientId,
       target: this.ngContainer.current,
       bundleRoot: '/'
     });
+
+    if (eventBindingsToUpdate) {
+      this.updateEventBindings(eventBindingsToUpdate);
+    }
 
     this.viewer.layerManager.layersChanged.add(this.layersChanged);
 
@@ -41,8 +53,15 @@ export default class Neuroglancer extends React.Component {
       });
     }
 
-    // TODO: function here should be used to pass the current viewer state to
-    // the global store, whether that be redux or something else.
+    // Make the Neuroglancer viewer accessible from getNeuroglancerViewerState().
+    // That function can be used to synchronize an external Redux store with any
+    // state changes made internally by the viewer.
+    const { key } = this.props;
+    if (key) {
+      viewersKeyed[key] = this.viewer;
+    } else {
+      viewerNoKey = this.viewer;
+    }
 
     // TODO: This is purely for debugging and we need to remove it.
     window.viewer = this.viewer;
@@ -62,6 +81,52 @@ export default class Neuroglancer extends React.Component {
         <p>Neuroglancer here with zoom { perspectiveZoom }</p>
       </div>
     );
+  }
+
+  componentWillUnmount() {
+    const { key } = this.props;
+    if (key) {
+      delete viewersKeyed[key];
+    } else {
+      viewerNoKey = undefined;
+    }
+  }
+
+  updateEventBindings = (eventBindingsToUpdate) => {
+    const root = this.viewer.inputEventBindings;
+
+    const traverse = (current) => {
+      const replace = (eaMap, event0, event1) => {
+        const action = eaMap.get(event0);
+        if (action) {
+          eaMap.delete(event0);
+          if (event1) {
+            eaMap.set(event1, action);
+          }
+        }
+      }
+
+      const eventActionMap = current.bindings;
+      eventBindingsToUpdate.forEach((oldNewBinding) => {
+        const eventOldBase = Array.isArray(oldNewBinding) ? oldNewBinding[0] : oldNewBinding;
+
+        const eventOldA = `at:${eventOldBase}`;
+        const eventNewA = oldNewBinding[1] ? `at:${oldNewBinding[1]}` : undefined;
+        replace(eventActionMap, eventOldA, eventNewA);
+
+        const eventOldB = `bubble:${eventOldBase}`;
+        const eventNewB = oldNewBinding[1] ? `bubble:${oldNewBinding[1]}` : undefined;
+        replace(eventActionMap, eventOldB, eventNewB);
+      });
+
+      current.parents.forEach((parent) => {
+        traverse(parent);
+      })
+    }
+
+    traverse(root.global);
+    traverse(root.perspectiveView);
+    traverse(root.sliceView);
   }
 
   layersChanged = () => {
@@ -129,6 +194,17 @@ export default class Neuroglancer extends React.Component {
 Neuroglancer.propTypes = {
   perspectiveZoom: PropTypes.number,
   viewerState: PropTypes.object,
+
+  /**
+   * An array of event bindings to change in Neuroglancer.  The array format is as follows:
+   * [[old-event1, new-event1], [old-event2], old-event3]
+   * Here, `old-event1`'s will be unbound and its action will be re-bound to `new-event1`.
+   * The bindings for `old-event2` and `old-event3` will be removed.
+   * Neuroglancer has its own syntax for event descriptors, and here are some examples:
+   * 'keya', 'shift+keyb' 'control+keyc', 'digit4', 'space', 'arrowleft', 'comma', 'period',
+   * 'minus', 'equal', 'bracketleft'.
+   */
+  eventBindingsToUpdate: PropTypes.array,
 
   /**
    * A function of the form `(segment, layer) => {}`, called each time there is a change to
