@@ -35,7 +35,7 @@
     "fs": "empty"
   },
   "dependencies": {
-    "@janelia-flyem/neuroglancer": "^0.7.4"
+    "@janelia-flyem/neuroglancer": "^0.8.0"
   },
   "peerDependencies": {
     "react": "^16.5.2",
