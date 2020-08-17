@@ -1,14 +1,14 @@
-import { setupDefaultViewer } from '@janelia-flyem/neuroglancer';
-import React from 'react';
-import PropTypes from 'prop-types';
-import { SegmentationUserLayer } from '@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer';
+import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
+import React from "react";
+import PropTypes from "prop-types";
+import { SegmentationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer";
 
-let viewersKeyed = {};
-let viewerNoKey = undefined;
+const viewersKeyed = {};
+let viewerNoKey;
 
 export function getNeuroglancerViewerState(key) {
   const v = key ? viewersKeyed[key] : viewerNoKey;
-  return (v ? v.state.toJSON() : {});
+  return v ? v.state.toJSON() : {};
 }
 
 export default class Neuroglancer extends React.Component {
@@ -19,11 +19,17 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidMount() {
-    const { perspectiveZoom, viewerState, brainMapsClientId, eventBindingsToUpdate } = this.props;
+    const {
+      perspectiveZoom,
+      viewerState,
+      brainMapsClientId,
+      eventBindingsToUpdate,
+      key
+    } = this.props;
     this.viewer = setupDefaultViewer({
       brainMapsClientId,
       target: this.ngContainer.current,
-      bundleRoot: '/'
+      bundleRoot: "/"
     });
 
     if (eventBindingsToUpdate) {
@@ -38,25 +44,26 @@ export default class Neuroglancer extends React.Component {
       this.viewer.state.restoreState({
         layers: {
           grayscale: {
-            type: 'image',
-            source: 'dvid://https://flyem.dvid.io/ab6e610d4fe140aba0e030645a1d7229/grayscalejpeg',
+            type: "image",
+            source:
+              "dvid://https://flyem.dvid.io/ab6e610d4fe140aba0e030645a1d7229/grayscalejpeg"
           },
           segmentation: {
-            type: 'segmentation',
-            source: 'dvid://https://flyem.dvid.io/d925633ed0974da78e2bb5cf38d01f4d/segmentation',
-          },
+            type: "segmentation",
+            source:
+              "dvid://https://flyem.dvid.io/d925633ed0974da78e2bb5cf38d01f4d/segmentation"
+          }
         },
         perspectiveZoom,
         navigation: {
-          zoomFactor: 8,
-        },
+          zoomFactor: 8
+        }
       });
     }
 
     // Make the Neuroglancer viewer accessible from getNeuroglancerViewerState().
     // That function can be used to synchronize an external Redux store with any
     // state changes made internally by the viewer.
-    const { key } = this.props;
     if (key) {
       viewersKeyed[key] = this.viewer;
     } else {
@@ -74,15 +81,6 @@ export default class Neuroglancer extends React.Component {
     }
   }
 
-  render() {
-    const { perspectiveZoom } = this.props;
-    return (
-      <div className="neuroglancer-container" ref={this.ngContainer}>
-        <p>Neuroglancer here with zoom { perspectiveZoom }</p>
-      </div>
-    );
-  }
-
   componentWillUnmount() {
     const { key } = this.props;
     if (key) {
@@ -92,10 +90,10 @@ export default class Neuroglancer extends React.Component {
     }
   }
 
-  updateEventBindings = (eventBindingsToUpdate) => {
+  updateEventBindings = eventBindingsToUpdate => {
     const root = this.viewer.inputEventBindings;
 
-    const traverse = (current) => {
+    const traverse = current => {
       const replace = (eaMap, event0, event1) => {
         const action = eaMap.get(event0);
         if (action) {
@@ -104,30 +102,36 @@ export default class Neuroglancer extends React.Component {
             eaMap.set(event1, action);
           }
         }
-      }
+      };
 
       const eventActionMap = current.bindings;
-      eventBindingsToUpdate.forEach((oldNewBinding) => {
-        const eventOldBase = Array.isArray(oldNewBinding) ? oldNewBinding[0] : oldNewBinding;
+      eventBindingsToUpdate.forEach(oldNewBinding => {
+        const eventOldBase = Array.isArray(oldNewBinding)
+          ? oldNewBinding[0]
+          : oldNewBinding;
 
         const eventOldA = `at:${eventOldBase}`;
-        const eventNewA = oldNewBinding[1] ? `at:${oldNewBinding[1]}` : undefined;
+        const eventNewA = oldNewBinding[1]
+          ? `at:${oldNewBinding[1]}`
+          : undefined;
         replace(eventActionMap, eventOldA, eventNewA);
 
         const eventOldB = `bubble:${eventOldBase}`;
-        const eventNewB = oldNewBinding[1] ? `bubble:${oldNewBinding[1]}` : undefined;
+        const eventNewB = oldNewBinding[1]
+          ? `bubble:${oldNewBinding[1]}`
+          : undefined;
         replace(eventActionMap, eventOldB, eventNewB);
       });
 
-      current.parents.forEach((parent) => {
+      current.parents.forEach(parent => {
         traverse(parent);
-      })
-    }
+      });
+    };
 
     traverse(root.global);
     traverse(root.perspectiveView);
     traverse(root.sliceView);
-  }
+  };
 
   layersChanged = () => {
     if (this.handlerRemovers) {
@@ -143,12 +147,20 @@ export default class Neuroglancer extends React.Component {
 
         for (let layer of this.viewer.layerManager.managedLayers) {
           if (layer.layer instanceof SegmentationUserLayer) {
-            const { segmentSelectionState, visibleSegments } = layer.layer.displayState;
+            const {
+              segmentSelectionState,
+              visibleSegments
+            } = layer.layer.displayState;
 
             if (segmentSelectionState && onSelectedChanged) {
               // Bind the layer so it will be an argument to the handler when called.
-              const selectedChanged = this.selectedChanged.bind(undefined, layer);
-              const remover = segmentSelectionState.changed.add(selectedChanged);
+              const selectedChanged = this.selectedChanged.bind(
+                undefined,
+                layer
+              );
+              const remover = segmentSelectionState.changed.add(
+                selectedChanged
+              );
               this.handlerRemovers.push(remover);
               layer.registerDisposer(remover);
             }
@@ -163,22 +175,24 @@ export default class Neuroglancer extends React.Component {
         }
       }
     }
-  }
+  };
 
-  selectedChanged = (layer) => {
+  selectedChanged = layer => {
     if (this.viewer) {
       const { onSelectedChanged } = this.props;
       if (onSelectedChanged) {
         const { segmentSelectionState } = layer.layer.displayState;
         if (segmentSelectionState) {
-          const segment = segmentSelectionState.hasSelectedSegment ? segmentSelectionState.selectedSegment : null;
+          const segment = segmentSelectionState.hasSelectedSegment
+            ? segmentSelectionState.selectedSegment
+            : null;
           onSelectedChanged(segment, layer);
         }
       }
     }
-  }
+  };
 
-  visibleChanged = (layer) => {
+  visibleChanged = layer => {
     if (this.viewer) {
       const { onVisibleChanged } = this.props;
       if (onVisibleChanged) {
@@ -188,12 +202,23 @@ export default class Neuroglancer extends React.Component {
         }
       }
     }
+  };
+
+  render() {
+    const { perspectiveZoom } = this.props;
+    return (
+      <div className="neuroglancer-container" ref={this.ngContainer}>
+        <p>Neuroglancer here with zoom {perspectiveZoom}</p>
+      </div>
+    );
   }
 }
 
 Neuroglancer.propTypes = {
   perspectiveZoom: PropTypes.number,
   viewerState: PropTypes.object,
+  brainMapsClientId: PropTypes.string,
+  key: PropTypes.string,
 
   /**
    * An array of event bindings to change in Neuroglancer.  The array format is as follows:
@@ -224,12 +249,15 @@ Neuroglancer.propTypes = {
    * The `layer` argument will be a Neuroglaner `ManagedUserLayer`, whose `layer` property
    * will be a Neuroglancer `SegmentationUserLayer`.
    */
-  onVisibleChanged: PropTypes.func,
+  onVisibleChanged: PropTypes.func
 };
 
 Neuroglancer.defaultProps = {
   perspectiveZoom: 20,
+  eventBindingsToUpdate: null,
+  brainMapsClientId: null,
   viewerState: null,
   onSelectedChanged: null,
   onVisibleChanged: null,
+  key: null
 };
