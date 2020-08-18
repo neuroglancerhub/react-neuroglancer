@@ -24,6 +24,7 @@ export default class Neuroglancer extends React.Component {
       viewerState,
       brainMapsClientId,
       eventBindingsToUpdate,
+      callbacks,
       key
     } = this.props;
     this.viewer = setupDefaultViewer({
@@ -31,6 +32,8 @@ export default class Neuroglancer extends React.Component {
       target: this.ngContainer.current,
       bundleRoot: "/"
     });
+
+    this.setCallbacks(callbacks);
 
     if (eventBindingsToUpdate) {
       this.updateEventBindings(eventBindingsToUpdate);
@@ -88,6 +91,25 @@ export default class Neuroglancer extends React.Component {
     } else {
       viewerNoKey = undefined;
     }
+  }
+
+  /* setCallbacks allows us to set a callback on a neuroglancer event
+   * each callback created should be in the format:
+   * [
+   *   {
+   *     name: 'unique-name',
+   *     event: 'the neuroglancer event to target, eg: click0, keyt',
+   *     function: (slice) => { slice.whatever }
+   *   },
+   *   {...}
+   * ]
+   *
+   */
+  setCallbacks(callbacks) {
+    callbacks.forEach(callback => {
+      this.viewer.bindCallback(callback.name, callback.function)
+      this.viewer.inputEventBindings.sliceView.set(callback.event, callback.name)
+    });
   }
 
   updateEventBindings = eventBindingsToUpdate => {
@@ -249,7 +271,8 @@ Neuroglancer.propTypes = {
    * The `layer` argument will be a Neuroglaner `ManagedUserLayer`, whose `layer` property
    * will be a Neuroglancer `SegmentationUserLayer`.
    */
-  onVisibleChanged: PropTypes.func
+  onVisibleChanged: PropTypes.func,
+  callbacks: PropTypes.arrayOf(PropTypes.object)
 };
 
 Neuroglancer.defaultProps = {
@@ -259,5 +282,6 @@ Neuroglancer.defaultProps = {
   viewerState: null,
   onSelectedChanged: null,
   onVisibleChanged: null,
-  key: null
+  key: null,
+  callbacks: []
 };
