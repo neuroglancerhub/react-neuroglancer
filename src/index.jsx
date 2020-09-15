@@ -82,6 +82,17 @@ export default class Neuroglancer extends React.Component {
     if (viewerState) {
       this.viewer.state.restoreState(viewerState);
     }
+    // for some reason setting position to an empty array doesn't reset
+    // the position in the viewer. This should handle those cases by looking
+    // for the empty position array and calling the position reset function if
+    // found.
+    if ('position' in viewerState) {
+      if (Array.isArray(viewerState.position)) {
+        if (viewerState.position.length === 0) {
+          this.viewer.position.reset();
+        }
+      }
+    }
   }
 
   componentWillUnmount() {
