@@ -78,11 +78,31 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidUpdate() {
+    // The restoreState() call clears the "selected" (hovered on) segment, which is needed
+    // by Neuroglancer's code to toggle segment visibilty on a mouse click.  To free the user
+    // from having to move the mouse before clicking, save the selected segment and restore
+    // it after restoreState().
+    let selectedSegments = {};
+    for (let layer of this.viewer.layerManager.managedLayers) {
+      if (layer.layer instanceof SegmentationUserLayer) {
+        const { segmentSelectionState } = layer.layer.displayState;
+        selectedSegments[layer.name] = segmentSelectionState.selectedSegment;
+      }
+    }
+
     const { viewerState } = this.props;
     if (viewerState) {
       this.viewer.state.restoreState(viewerState);
     }
-    // for some reason setting position to an empty array doesn't reset
+
+    for (let layer of this.viewer.layerManager.managedLayers) {
+      if (layer.layer instanceof SegmentationUserLayer) {
+        const { segmentSelectionState } = layer.layer.displayState;
+        segmentSelectionState.set(selectedSegments[layer.name]);
+      }
+    }
+
+    // For some reason setting position to an empty array doesn't reset
     // the position in the viewer. This should handle those cases by looking
     // for the empty position array and calling the position reset function if
     // found.
