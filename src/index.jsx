@@ -2,6 +2,7 @@ import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
 import React from "react";
 import PropTypes from "prop-types";
 import { SegmentationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer";
+import { AnnotationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/annotation/user_layer";
 
 const viewersKeyed = {};
 let viewerNoKey;
@@ -9,6 +10,167 @@ let viewerNoKey;
 export function getNeuroglancerViewerState(key) {
   const v = key ? viewersKeyed[key] : viewerNoKey;
   return v ? v.state.toJSON() : {};
+}
+
+export function getAnnotationSource(key, name) {
+  const layer = getAnnotationLayer(key, name);
+  if (layer && layer.dataSources && layer.dataSources[0].loadState_) {
+    const dataSource = layer.dataSources[0].loadState_.dataSource;
+    if (dataSource) {
+      return dataSource.subsources[0].subsource.annotation;
+    }
+  }
+}
+
+export function getLayerManager(key) {
+  const v = key ? viewersKeyed[key] : viewerNoKey;
+  if (v) {
+    return v.layerManager;
+  }
+}
+
+export function getManagedLayer(key, name) {
+  const layerManager = getLayerManager(key);
+  if (layerManager) {
+    for (let layer of layerManager.managedLayers) {
+      if (layer.name === name) {
+        return layer;
+      }
+    }
+  }
+}
+
+export function getAnnotationLayer(key, name) {
+  const layer = getManagedLayer(key, name);
+  if (layer && layer.layer instanceof AnnotationUserLayer) {
+    return layer.layer;
+  }
+}
+
+export function addLayerSignalRemover(key, name, remover) {
+  const layerManager = getLayerManager(key);
+  if (layerManager && name && remover) {
+    if (!layerManager.customSignalHandlerRemovers) {
+      layerManager.customSignalHandlerRemovers = {};
+    }
+    if (!layerManager.customSignalHandlerRemovers[name]) {
+      layerManager.customSignalHandlerRemovers[name] = [];
+    }
+
+    layerManager.customSignalHandlerRemovers[name].push(remover);
+  }
+}
+
+export function unsubscribeLayersChangedSignals(layerManager, signalKey) {
+  if (layerManager) {
+    if (layerManager.customSignalHandlerRemovers) {
+      if (layerManager.customSignalHandlerRemovers[signalKey]) {
+        for (const remover of layerManager.customSignalHandlerRemovers[signalKey]) {
+          remover();
+        }
+        delete layerManager.customSignalHandlerRemovers[signalKey];
+      }
+    }
+  }
+}
+
+export function configureLayersChangedSignals(key, layerConfig) {
+  const layerManager = getLayerManager(key);
+  if (layerManager) {
+    const { layerName } = layerConfig;
+    unsubscribeLayersChangedSignals(layerManager, layerName);
+    if (layerConfig.process) {
+      const recordRemover = (remover) => addLayerSignalRemover(undefined, layerName, remover)
+      recordRemover(
+        layerManager.layersChanged.add(() => {
+          const layer = getManagedLayer(undefined, layerName);
+          if (layer) {
+            layerConfig.process(layer);
+          }
+        }));
+      const layer = getManagedLayer(undefined, layerName);
+      if (layer) {
+        layerConfig.process(layer);
+      }
+
+      return () => unsubscribeLayersChangedSignals(layerManager, layerName);
+    }
+  }
+}
+
+function configureAnnotationSource(source, props, recordRemover)
+{
+  if (source && !source.signalReady) {
+    if (props.onAnnotationAdded) {
+      recordRemover(source.childAdded.add((annotation) => {
+        props.onAnnotationAdded(annotation);
+      }));
+    }
+    console.log('[source.childAdded]', source.childAdded);
+    if (props.onAnnotationDeleted) {
+      recordRemover(source.childDeleted.add((id) => {
+        props.onAnnotationDeleted(id);
+      }));
+    }
+    if (props.onAnnotationUpdated) {
+      recordRemover(source.childUpdated.add((annotation => {
+        props.onAnnotationUpdated(annotation);
+      })));
+    }
+    source.signalReady = true;
+    recordRemover(() => {
+      source.signalReady = false;
+    });
+  }
+}
+
+function configureAnnotationSourceChange(annotationLayer, props, recordRemover) {
+  const sourceChanged = annotationLayer.dataSourcesChanged;
+  if (sourceChanged && !sourceChanged.signalReady) {
+    recordRemover(
+      sourceChanged.add(() => {
+        console.log('source changed');
+        console.log(annotationLayer.dataSources[0]);
+        if (annotationLayer.dataSources[0].loadState_.dataSource) {
+          let source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
+          configureAnnotationSource(source, props, recordRemover);
+        }
+      })
+    );
+    sourceChanged.signalReady = true;
+    recordRemover(() => {
+      sourceChanged.signalReady = false;
+    });
+
+    if (annotationLayer.dataSources[0].loadState_ && annotationLayer.dataSources[0].loadState_.dataSource) {
+      let source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
+      configureAnnotationSource(source, props, recordRemover);
+    }
+  }
+}
+
+export function configureAnnotationLayer(layer, props, recordRemover)
+{
+  if (layer) {
+    configureAnnotationSourceChange(layer, props, recordRemover);
+  }
+}
+
+export function configureAnnotationLayerChanged(layer, props, recordRemover) {
+  if (!layer.layerChanged.signalReady) {
+    const remover = layer.layerChanged.add(() => {
+      console.log('layer changed');
+      // const annotationLayer = layer.layer;
+      configureAnnotationLayer(layer.layer, props, recordRemover);
+    });
+    layer.layerChanged.signalReady = true;
+    recordRemover(remover);
+    recordRemover(() => {
+      layer.layerChanged.signalReady = false;
+    });
+
+    configureAnnotationLayer(layer.layer, props, recordRemover);
+  }
 }
 
 export default class Neuroglancer extends React.Component {
