@@ -106,7 +106,6 @@ function configureAnnotationSource(source, props, recordRemover)
         props.onAnnotationAdded(annotation);
       }));
     }
-    console.log('[source.childAdded]', source.childAdded);
     if (props.onAnnotationDeleted) {
       recordRemover(source.childDeleted.add((id) => {
         props.onAnnotationDeleted(id);
@@ -129,8 +128,6 @@ function configureAnnotationSourceChange(annotationLayer, props, recordRemover) 
   if (sourceChanged && !sourceChanged.signalReady) {
     recordRemover(
       sourceChanged.add(() => {
-        console.log('source changed');
-        console.log(annotationLayer.dataSources[0]);
         if (annotationLayer.dataSources[0].loadState_.dataSource) {
           let source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
           configureAnnotationSource(source, props, recordRemover);
@@ -152,6 +149,18 @@ function configureAnnotationSourceChange(annotationLayer, props, recordRemover) 
 export function configureAnnotationLayer(layer, props, recordRemover)
 {
   if (layer) {
+    layer.expectingExternalTable = true;
+    if (layer.selectedAnnotation && !layer.selectedAnnotation.changed.signalReady) {
+      if (props.onAnnotationSelectionChanged) {
+        recordRemover(layer.selectedAnnotation.changed.add(() => {
+          props.onAnnotationSelectionChanged(layer.selectedAnnotation.value);
+        }));
+        recordRemover(() => {
+          layer.selectedAnnotation.changed.signalReady = false;
+        });
+        layer.selectedAnnotation.changed.signalReady = true;
+      }
+    }
     configureAnnotationSourceChange(layer, props, recordRemover);
   }
 }
@@ -159,8 +168,6 @@ export function configureAnnotationLayer(layer, props, recordRemover)
 export function configureAnnotationLayerChanged(layer, props, recordRemover) {
   if (!layer.layerChanged.signalReady) {
     const remover = layer.layerChanged.add(() => {
-      console.log('layer changed');
-      // const annotationLayer = layer.layer;
       configureAnnotationLayer(layer.layer, props, recordRemover);
     });
     layer.layerChanged.signalReady = true;
