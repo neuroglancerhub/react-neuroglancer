@@ -1,8 +1,11 @@
-import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
 import React from "react";
 import PropTypes from "prop-types";
-import { SegmentationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer";
 import { AnnotationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/annotation/user_layer";
+import { getObjectColor } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_display_state/frontend";
+import { SegmentationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer";
+import { serializeColor } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/color";
+import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
+import { Uint64 } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/uint64";
 
 const viewersKeyed = {};
 let viewerNoKey;
@@ -10,6 +13,35 @@ let viewerNoKey;
 export function getNeuroglancerViewerState(key) {
   const v = key ? viewersKeyed[key] : viewerNoKey;
   return v ? v.state.toJSON() : {};
+}
+
+export function getNeuroglancerColor(idStr, key) {
+  try {
+    const id = Uint64.parseString(idStr);
+    const v = key ? viewersKeyed[key] : viewerNoKey;
+    if (v) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const layer of v.layerManager.managedLayers) {
+        if (layer.layer instanceof SegmentationUserLayer) {
+          const { displayState } = layer.layer;
+          const colorVec = getObjectColor(displayState, id);
+
+          // To get the true color, undo how getObjectColor() indicates hovering.
+          if (displayState.segmentSelectionState.isSelected(id)) {
+            for (let i = 0; i < 3; i += 1) {
+              colorVec[i] = (colorVec[i] - 0.5) / 0.5;
+            }
+          }
+
+          const colorStr = serializeColor(colorVec);
+          return colorStr;
+        }
+      }
+    }
+  } catch {
+    // suppress eslint no-empty
+  }
+  return '';
 }
 
 export function getAnnotationSource(key, name) {
@@ -251,8 +283,9 @@ export default class Neuroglancer extends React.Component {
     // by Neuroglancer's code to toggle segment visibilty on a mouse click.  To free the user
     // from having to move the mouse before clicking, save the selected segment and restore
     // it after restoreState().
-    let selectedSegments = {};
-    for (let layer of this.viewer.layerManager.managedLayers) {
+    const selectedSegments = {};
+    // eslint-disable-next-line no-restricted-syntax
+    for (const layer of this.viewer.layerManager.managedLayers) {
       if (layer.layer instanceof SegmentationUserLayer) {
         const { segmentSelectionState } = layer.layer.displayState;
         selectedSegments[layer.name] = segmentSelectionState.selectedSegment;
@@ -264,7 +297,8 @@ export default class Neuroglancer extends React.Component {
       this.viewer.state.restoreState(viewerState);
     }
 
-    for (let layer of this.viewer.layerManager.managedLayers) {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const layer of this.viewer.layerManager.managedLayers) {
       if (layer.layer instanceof SegmentationUserLayer) {
         const { segmentSelectionState } = layer.layer.displayState;
         segmentSelectionState.set(selectedSegments[layer.name]);
@@ -367,7 +401,8 @@ export default class Neuroglancer extends React.Component {
       if (onSelectedChanged || onVisibleChanged) {
         this.handlerRemovers = [];
 
-        for (let layer of this.viewer.layerManager.managedLayers) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const layer of this.viewer.layerManager.managedLayers) {
           if (layer.layer instanceof SegmentationUserLayer) {
             const {
               segmentSelectionState,
@@ -430,7 +465,10 @@ export default class Neuroglancer extends React.Component {
     const { perspectiveZoom } = this.props;
     return (
       <div className="neuroglancer-container" ref={this.ngContainer}>
-        <p>Neuroglancer here with zoom {perspectiveZoom}</p>
+        <p>
+          Neuroglancer here with zoom 
+          {perspectiveZoom}
+        </p>
       </div>
     );
   }
