@@ -44,32 +44,20 @@ export function getNeuroglancerColor(idStr, key) {
   return '';
 }
 
-export function getAnnotationSource(key, name) {
-  const layer = getAnnotationLayer(key, name);
-  if (layer && layer.dataSources && layer.dataSources[0].loadState_) {
-    const dataSource = layer.dataSources[0].loadState_.dataSource;
-    if (dataSource) {
-      return dataSource.subsources[0].subsource.annotation;
-    }
-  }
-}
-
 export function getLayerManager(key) {
   const v = key ? viewersKeyed[key] : viewerNoKey;
   if (v) {
     return v.layerManager;
   }
+  return undefined;
 }
 
 export function getManagedLayer(key, name) {
   const layerManager = getLayerManager(key);
   if (layerManager) {
-    for (let layer of layerManager.managedLayers) {
-      if (layer.name === name) {
-        return layer;
-      }
-    }
+    return layerManager.managedLayers.filter(layer => layer.name === name)[0];
   }
+  return undefined;
 }
 
 export function getAnnotationLayer(key, name) {
@@ -77,6 +65,20 @@ export function getAnnotationLayer(key, name) {
   if (layer && layer.layer instanceof AnnotationUserLayer) {
     return layer.layer;
   }
+  return undefined;
+}
+
+export function getAnnotationSource(key, name) {
+  const layer = getAnnotationLayer(key, name);
+  /* eslint-disable-next-line no-underscore-dangle */
+  if (layer && layer.dataSources && layer.dataSources[0].loadState_) {
+    /* eslint-disable-next-line no-underscore-dangle */
+    const { dataSource } = layer.dataSources[0].loadState_;
+    if (dataSource) {
+      return dataSource.subsources[0].subsource.annotation;
+    }
+  }
+  return undefined;
 }
 
 export function addLayerSignalRemover(key, name, remover) {
@@ -97,9 +99,9 @@ export function unsubscribeLayersChangedSignals(layerManager, signalKey) {
   if (layerManager) {
     if (layerManager.customSignalHandlerRemovers) {
       if (layerManager.customSignalHandlerRemovers[signalKey]) {
-        for (const remover of layerManager.customSignalHandlerRemovers[signalKey]) {
+        layerManager.customSignalHandlerRemovers[signalKey].forEach(remover => {
           remover();
-        }
+        });
         delete layerManager.customSignalHandlerRemovers[signalKey];
       }
     }
@@ -128,10 +130,10 @@ export function configureLayersChangedSignals(key, layerConfig) {
       return () => unsubscribeLayersChangedSignals(layerManager, layerName);
     }
   }
+  return undefined;
 }
 
-function configureAnnotationSource(source, props, recordRemover)
-{
+function configureAnnotationSource(source, props, recordRemover) {
   if (source && !source.signalReady) {
     if (props.onAnnotationAdded) {
       recordRemover(source.childAdded.add((annotation) => {
@@ -160,8 +162,10 @@ function configureAnnotationSourceChange(annotationLayer, props, recordRemover) 
   if (sourceChanged && !sourceChanged.signalReady) {
     recordRemover(
       sourceChanged.add(() => {
+        /* eslint-disable-next-line no-underscore-dangle */
         if (annotationLayer.dataSources[0].loadState_.dataSource) {
-          let source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
+          /* eslint-disable-next-line no-underscore-dangle */
+          const source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
           configureAnnotationSource(source, props, recordRemover);
         }
       })
@@ -170,16 +174,16 @@ function configureAnnotationSourceChange(annotationLayer, props, recordRemover) 
     recordRemover(() => {
       sourceChanged.signalReady = false;
     });
-
+    /* eslint-disable-next-line no-underscore-dangle */
     if (annotationLayer.dataSources[0].loadState_ && annotationLayer.dataSources[0].loadState_.dataSource) {
-      let source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
+      /* eslint-disable-next-line no-underscore-dangle */
+      const source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
       configureAnnotationSource(source, props, recordRemover);
     }
   }
 }
 
-export function configureAnnotationLayer(layer, props, recordRemover)
-{
+export function configureAnnotationLayer(layer, props, recordRemover) {
   if (layer) {
     layer.expectingExternalTable = true;
     if (layer.selectedAnnotation && !layer.selectedAnnotation.changed.signalReady) {
@@ -466,8 +470,7 @@ export default class Neuroglancer extends React.Component {
     return (
       <div className="neuroglancer-container" ref={this.ngContainer}>
         <p>
-          Neuroglancer here with zoom 
-          {perspectiveZoom}
+          Neuroglancer here with zoom {perspectiveZoom}
         </p>
       </div>
     );
