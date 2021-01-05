@@ -21,7 +21,7 @@
   "author": "Jody Clements",
   "license": "MIT",
   "devDependencies": {
-    "@babel/cli": "^7.4.3",
+    "@babel/cli": "^7.12.10",
     "@babel/core": "^7.4.3",
     "@babel/plugin-proposal-class-properties": "^7.4.4",
     "@babel/preset-env": "^7.4.3",
