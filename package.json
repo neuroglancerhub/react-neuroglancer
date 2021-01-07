@@ -44,7 +44,7 @@
     "fs": "empty"
   },
   "dependencies": {
-    "@janelia-flyem/neuroglancer": "^0.12.0"
+    "@janelia-flyem/neuroglancer": "^0.12.1"
   },
   "peerDependencies": {
     "prop-types": "^15.6.2",
