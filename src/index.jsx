@@ -6,9 +6,35 @@ import { SegmentationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/n
 import { serializeColor } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/color";
 import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
 import { Uint64 } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/uint64";
+import { urlSafeParse } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/json";
 
 const viewersKeyed = {};
 let viewerNoKey;
+
+// Adopted from neuroglancer/ui/url_hash_binding.ts
+export function parseUrlHash(url) {
+  let state = null;
+
+  let s = url.replace(/^[^#]+/, '');
+  if (s === '' || s === '#' || s === '#!') {
+    s = '#!{}';
+  }
+
+  if (s.startsWith('#!+')) {
+    s = s.slice(3);
+    // Firefox always %-encodes the URL even if it is not typed that way.
+    s = decodeURIComponent(s);
+    state = urlSafeParse(s);
+  } else if (s.startsWith('#!')) {
+    s = s.slice(2);
+    s = decodeURIComponent(s);
+    state = urlSafeParse(s);
+  } else {
+    throw new Error(`URL hash is expected to be of the form "#!{...}" or "#!+{...}".`);
+  }
+
+  return state;
+}
 
 export function getNeuroglancerViewerState(key) {
   const v = key ? viewersKeyed[key] : viewerNoKey;
@@ -157,29 +183,37 @@ function configureAnnotationSource(source, props, recordRemover) {
   }
 }
 
+function getLoadedDataSource(layer) {
+  /* eslint-disable-next-line no-underscore-dangle */
+  if (layer.dataSources && layer.dataSources.length > 0 && layer.dataSources[0].loadState_ && layer.dataSources[0].loadState_.dataSource) {
+    /* eslint-disable-next-line no-underscore-dangle */
+    return layer.dataSources[0].loadState_.dataSource;
+  }
+}
+
+function getAnnotationSourceFromLayer(layer) {
+  const dataSource = getLoadedDataSource(layer);
+  if (dataSource) {
+    return dataSource.subsources[0].subsource.annotation;
+  }
+}
+
 function configureAnnotationSourceChange(annotationLayer, props, recordRemover) {
+  const configure = () => {
+    const source = getAnnotationSourceFromLayer(annotationLayer);
+    if (source) {
+      configureAnnotationSource(source, props, recordRemover);
+    }
+  }
+
   const sourceChanged = annotationLayer.dataSourcesChanged;
   if (sourceChanged && !sourceChanged.signalReady) {
-    recordRemover(
-      sourceChanged.add(() => {
-        /* eslint-disable-next-line no-underscore-dangle */
-        if (annotationLayer.dataSources[0].loadState_.dataSource) {
-          /* eslint-disable-next-line no-underscore-dangle */
-          const source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
-          configureAnnotationSource(source, props, recordRemover);
-        }
-      })
-    );
+    recordRemover(sourceChanged.add(configure));
     sourceChanged.signalReady = true;
     recordRemover(() => {
       sourceChanged.signalReady = false;
     });
-    /* eslint-disable-next-line no-underscore-dangle */
-    if (annotationLayer.dataSources[0].loadState_ && annotationLayer.dataSources[0].loadState_.dataSource) {
-      /* eslint-disable-next-line no-underscore-dangle */
-      const source = annotationLayer.dataSources[0].loadState_.dataSource.subsources[0].subsource.annotation;
-      configureAnnotationSource(source, props, recordRemover);
-    }
+    configure();
   }
 }
 
