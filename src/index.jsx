@@ -250,6 +250,43 @@ export function configureAnnotationLayerChanged(layer, props, recordRemover) {
   }
 }
 
+export function getAnnotationSelectionHost(key) {
+  const viewer = key ? viewersKeyed[key] : viewerNoKey;
+  if (viewer) {
+    if (viewer.selectionDetailsState) {
+      return 'viewer';
+    }
+    return 'layer';
+  }
+
+  return null;
+}
+
+export function getSelectedAnnotationId(key, layerName) {
+  const viewer = key ? viewersKeyed[key] : viewerNoKey;
+  if (viewer) {
+    if (viewer.selectionDetailsState) { // New neurolgancer version
+      // v.selectionDetailsState.value.layers[0].layer.managedLayer.name
+      if (viewer.selectionDetailsState.value) {
+        const { layers } = viewer.selectionDetailsState.value;
+        if (layers) {
+          const layer = layers.find((_layer) => _layer.layer.managedLayer.name === layerName);
+          if (layer && layer.state) {
+            return layer.state.annotationId;
+          }
+        }
+      }
+    } else {
+      const layer = getAnnotationLayer(undefined, layerName);
+      if (layer && layer.selectedAnnotation && layer.selectedAnnotation.value) {
+        return layer.selectedAnnotation.value.id;
+      }
+    }
+  }
+
+  return null;
+}
+
 export default class Neuroglancer extends React.Component {
   constructor(props) {
     super(props);
@@ -278,6 +315,10 @@ export default class Neuroglancer extends React.Component {
       this.updateEventBindings(eventBindingsToUpdate);
     }
 
+    this.viewer.expectingExternalUI = true;
+    if (this.viewer.selectionDetailsState) {
+      this.viewer.selectionDetailsState.changed.add(this.selectionDetailsStateChanged);
+    }
     this.viewer.layerManager.layersChanged.add(this.layersChanged);
 
     if (viewerState) {
@@ -426,6 +467,15 @@ export default class Neuroglancer extends React.Component {
     traverse(root.perspectiveView);
     traverse(root.sliceView);
   };
+
+  selectionDetailsStateChanged = () => {
+    if (this.viewer) {
+      const { onSelectionDetailsStateChanged } = this.props;
+      if (onSelectionDetailsStateChanged) {
+        onSelectionDetailsStateChanged();
+      }
+    }
+  }
 
   layersChanged = () => {
     if (this.handlerRemovers) {
