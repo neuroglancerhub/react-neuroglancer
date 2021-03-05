@@ -492,11 +492,8 @@ export default class Neuroglancer extends React.Component {
         // eslint-disable-next-line no-restricted-syntax
         for (const layer of this.viewer.layerManager.managedLayers) {
           if (layer.layer instanceof SegmentationUserLayer) {
-            const {
-              segmentSelectionState,
-              visibleSegments
-            } = layer.layer.displayState;
-
+            const { segmentSelectionState } = layer.layer.displayState;
+            const { visibleSegments } = layer.layer.displayState.segmentationGroupState.value;
             if (segmentSelectionState && onSelectedChanged) {
               // Bind the layer so it will be an argument to the handler when called.
               const selectedChanged = this.selectedChanged.bind(
@@ -541,7 +538,7 @@ export default class Neuroglancer extends React.Component {
     if (this.viewer) {
       const { onVisibleChanged } = this.props;
       if (onVisibleChanged) {
-        const { visibleSegments } = layer.layer.displayState;
+        const { visibleSegments } = layer.layer.displayState.segmentationGroupState.value;
         if (visibleSegments) {
           onVisibleChanged(visibleSegments, layer);
         }
