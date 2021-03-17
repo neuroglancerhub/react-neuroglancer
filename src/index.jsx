@@ -140,7 +140,7 @@ export function configureLayersChangedSignals(key, layerConfig) {
     const { layerName } = layerConfig;
     unsubscribeLayersChangedSignals(layerManager, layerName);
     if (layerConfig.process) {
-      const recordRemover = (remover) => addLayerSignalRemover(undefined, layerName, remover)
+      const recordRemover = (remover) => addLayerSignalRemover(undefined, layerName, remover);
       recordRemover(
         layerManager.layersChanged.add(() => {
           const layer = getManagedLayer(undefined, layerName);
@@ -153,10 +153,15 @@ export function configureLayersChangedSignals(key, layerConfig) {
         layerConfig.process(layer);
       }
 
-      return () => unsubscribeLayersChangedSignals(layerManager, layerName);
+      return () =>  {
+        if (layerConfig.cancel) {
+          layerConfig.cancel();
+        }
+        unsubscribeLayersChangedSignals(layerManager, layerName);
+      }
     }
   }
-  return undefined;
+  return layerConfig.cancel;
 }
 
 function configureAnnotationSource(source, props, recordRemover) {
@@ -176,6 +181,10 @@ function configureAnnotationSource(source, props, recordRemover) {
         props.onAnnotationUpdated(annotation);
       })));
     }
+    if (props.onAnnotationChanged && source.referencesChanged) {
+      recordRemover(source.referencesChanged.add(props.onAnnotationChanged));
+    }
+
     source.signalReady = true;
     recordRemover(() => {
       source.signalReady = false;
