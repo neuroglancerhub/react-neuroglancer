@@ -70,6 +70,13 @@ export function getNeuroglancerColor(idStr, key) {
   return '';
 }
 
+export function closeSelectionTab(key) {
+  const v = key ? viewersKeyed[key] : viewerNoKey;
+  if (v && v.closeSelectionTab) {
+    v.closeSelectionTab();
+  }
+}
+
 export function getLayerManager(key) {
   const v = key ? viewersKeyed[key] : viewerNoKey;
   if (v) {
