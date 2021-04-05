@@ -389,7 +389,20 @@ export default class Neuroglancer extends React.Component {
 
     const { viewerState } = this.props;
     if (viewerState) {
-      this.viewer.state.restoreState(viewerState);
+      let newViewerState = { ...viewerState };
+      let restoreStates = [() => {
+        this.viewer.state.restoreState(newViewerState)
+      }];
+      if (viewerState.projectionScale === null) {
+        delete newViewerState.projectionScale;
+        restoreStates.push(() => {
+          this.viewer.projectionScale.reset();
+        });
+      }
+      if (viewerState.crossSectionScale === null) {
+        delete newViewerState.crossSectionScale;
+      }
+      restoreStates.forEach(restore => restore());
     }
 
     // eslint-disable-next-line no-restricted-syntax
