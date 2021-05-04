@@ -1,6 +1,6 @@
 {
   "name": "@janelia-flyem/react-neuroglancer",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "React component wrapping neuroglancer",
   "main": "lib/index.js",
   "scripts": {
