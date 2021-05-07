@@ -641,7 +641,14 @@ Neuroglancer.propTypes = {
    * will be a Neuroglancer `SegmentationUserLayer`.
    */
   onVisibleChanged: PropTypes.func,
-  callbacks: PropTypes.arrayOf(PropTypes.object)
+
+  /**
+   * A function of the form `() => {}` to respond to selection changes in the viewer.
+   */
+  onSelectionDetailsStateChanged: PropTypes.func,
+
+  callbacks: PropTypes.arrayOf(PropTypes.object),
+  ngServer: PropTypes.string,
 };
 
 Neuroglancer.defaultProps = {
@@ -651,6 +658,8 @@ Neuroglancer.defaultProps = {
   viewerState: null,
   onSelectedChanged: null,
   onVisibleChanged: null,
+  onSelectionDetailsStateChanged: null,
   key: null,
-  callbacks: []
+  callbacks: [],
+  ngServer: null,
 };
