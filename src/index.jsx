@@ -7,6 +7,7 @@ import { serializeColor } from "@janelia-flyem/neuroglancer/dist/module/neurogla
 import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
 import { Uint64 } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/uint64";
 import { urlSafeParse } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/json";
+import { encodeFragment } from '@janelia-flyem/neuroglancer/dist/module/neuroglancer/ui/url_hash_binding';
 
 const viewersKeyed = {};
 let viewerNoKey;
@@ -317,6 +318,7 @@ export default class Neuroglancer extends React.Component {
       brainMapsClientId,
       eventBindingsToUpdate,
       callbacks,
+      ngServer,
       key
     } = this.props;
     this.viewer = setupDefaultViewer({
@@ -332,6 +334,22 @@ export default class Neuroglancer extends React.Component {
     }
 
     this.viewer.expectingExternalUI = true;
+    if (ngServer) {
+      this.viewer.makeUrlFromState = (state) => {
+        const newState = { ...state };
+        if (state.layers) {
+          // Do not include clio annotation layers
+          newState.layers = state.layers.filter((layer) => {
+            if (layer.source) {
+              const sourceUrl = layer.source.url || layer.source;
+              return !sourceUrl.startsWith('clio://');
+            }
+            return true;
+          });
+        }
+        return `${ngServer}/#!${encodeFragment(JSON.stringify(newState))}`;
+      };
+    }
     if (this.viewer.selectionDetailsState) {
       this.viewer.selectionDetailsState.changed.add(this.selectionDetailsStateChanged);
     }
@@ -623,7 +641,14 @@ Neuroglancer.propTypes = {
    * will be a Neuroglancer `SegmentationUserLayer`.
    */
   onVisibleChanged: PropTypes.func,
-  callbacks: PropTypes.arrayOf(PropTypes.object)
+
+  /**
+   * A function of the form `() => {}` to respond to selection changes in the viewer.
+   */
+  onSelectionDetailsStateChanged: PropTypes.func,
+
+  callbacks: PropTypes.arrayOf(PropTypes.object),
+  ngServer: PropTypes.string,
 };
 
 Neuroglancer.defaultProps = {
@@ -633,6 +658,8 @@ Neuroglancer.defaultProps = {
   viewerState: null,
   onSelectedChanged: null,
   onVisibleChanged: null,
+  onSelectionDetailsStateChanged: null,
   key: null,
-  callbacks: []
+  callbacks: [],
+  ngServer: null,
 };
