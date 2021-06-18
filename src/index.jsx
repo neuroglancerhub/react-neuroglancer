@@ -356,7 +356,20 @@ export default class Neuroglancer extends React.Component {
     this.viewer.layerManager.layersChanged.add(this.layersChanged);
 
     if (viewerState) {
-      this.viewer.state.restoreState(viewerState);
+      const newViewerState = viewerState;
+      if (newViewerState.projectionScale === null) {
+        delete newViewerState.projectionScale;
+      }
+      if (newViewerState.crossSectionScale === null) {
+        delete newViewerState.crossSectionScale;
+      }
+      if (newViewerState.projectionOrientation === null) {
+        delete newViewerState.projectionOrientation;
+      }
+      if (newViewerState.crossSectionOrientation === null) {
+        delete newViewerState.crossSectionOrientation;
+      }
+      this.viewer.state.restoreState(newViewerState);
     } else {
       this.viewer.state.restoreState({
         layers: {
