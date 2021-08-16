@@ -342,7 +342,9 @@ export default class Neuroglancer extends React.Component {
           newState.layers = state.layers.filter((layer) => {
             if (layer.source) {
               const sourceUrl = layer.source.url || layer.source;
-              return !sourceUrl.startsWith('clio://');
+              if (typeof sourceUrl === 'string') {
+                return !sourceUrl.startsWith('clio://');
+              }
             }
             return true;
           });
