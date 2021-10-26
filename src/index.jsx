@@ -317,6 +317,7 @@ export default class Neuroglancer extends React.Component {
       viewerState,
       brainMapsClientId,
       eventBindingsToUpdate,
+      onViewerStateChanged,
       callbacks,
       ngServer,
       key
@@ -392,6 +393,18 @@ export default class Neuroglancer extends React.Component {
         }
       });
     }
+
+    this.viewer.state.changed.add(() => {
+      if (onViewerStateChanged) {
+        try {
+          if (this.viewer.state.viewer.position) {
+            onViewerStateChanged(this.viewer.state.toJSON());
+          }
+        } catch (error) {
+          console.debug(error);
+        }
+      }
+    });
 
     // Make the Neuroglancer viewer accessible from getNeuroglancerViewerState().
     // That function can be used to synchronize an external Redux store with any
