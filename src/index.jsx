@@ -674,6 +674,7 @@ Neuroglancer.propTypes = {
    * A function of the form `() => {}` to respond to selection changes in the viewer.
    */
   onSelectionDetailsStateChanged: PropTypes.func,
+  onViewerStateChanged: PropTypes.func,
 
   callbacks: PropTypes.arrayOf(PropTypes.object),
   ngServer: PropTypes.string,
@@ -687,6 +688,7 @@ Neuroglancer.defaultProps = {
   onSelectedChanged: null,
   onVisibleChanged: null,
   onSelectionDetailsStateChanged: null,
+  onViewerStateChanged: null,
   key: null,
   callbacks: [],
   ngServer: 'https://neuroglancer-demo.appspot.com/',
