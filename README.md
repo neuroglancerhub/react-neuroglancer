@@ -45,7 +45,7 @@ The main component that will show the neuroglancer viewer.
 
 The viewerState should be defined before creating the neuroglancer viewer. Here is a simple example of a state that shows two lawyers in the viewer.
 
-```JSON
+```javascript
 {
     layers: {
         grayscale: {
