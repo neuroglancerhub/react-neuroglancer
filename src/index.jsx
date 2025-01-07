@@ -682,12 +682,12 @@ Neuroglancer.propTypes = {
 Neuroglancer.defaultProps = {
   perspectiveZoom: 20,
   eventBindingsToUpdate: null,
-  brainMapsClientId: null,
+  brainMapsClientId: 'NOT_A_VALID_ID',
   viewerState: null,
   onSelectedChanged: null,
   onVisibleChanged: null,
   onSelectionDetailsStateChanged: null,
   key: null,
   callbacks: [],
-  ngServer: null,
+  ngServer: 'https://neuroglancer-demo.appspot.com/',
 };
