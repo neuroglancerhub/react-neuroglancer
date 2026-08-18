@@ -2,3 +2,5 @@ node_modules
 dist
 lib/*
 *~
+example/public/assets
+example/dist

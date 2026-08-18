@@ -1,0 +1,46 @@
+.example {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.example-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #222;
+  color: #eee;
+  font-size: 0.85rem;
+}
+
+.example-readout {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.example-viewer {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/*
+ * Neuroglancer sizes itself against this element: it sets position:relative on
+ * it inline, then absolutely positions its canvas and UI at 100% x 100% inside.
+ * So the element needs a real height of its own, and positioning it from a
+ * stylesheet does not work — the inline style wins. Making it a flex item that
+ * fills the row avoids depending on a chain of percentage heights.
+ */
+.example-viewer .neuroglancer-container {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The component renders a placeholder paragraph; it sits under the viewer. */
+.example-viewer .neuroglancer-container > p {
+  display: none;
+}

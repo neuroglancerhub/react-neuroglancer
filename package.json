@@ -2,46 +2,47 @@
   "name": "@janelia-flyem/react-neuroglancer",
   "version": "2.5.1",
   "description": "React component wrapping neuroglancer",
-  "main": "lib/index.js",
-  "scripts": {
-    "test": "jest",
-    "build": "NODE_ENV=production babel src -d lib",
-    "dev": "NODE_ENV=development babel src --watch --verbose -d lib",
-    "prepublishOnly": "npm run build"
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./src/*": "./src/*"
   },
-  "babel": {
-    "presets": [
-      "@babel/preset-env",
-      "@babel/preset-react"
-    ],
-    "plugins": [
-      "@babel/plugin-proposal-class-properties"
-    ]
+  "files": [
+    "dist",
+    "src",
+    "LICENESE.md"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "example": "npm run build && node example/copy-neuroglancer-assets.mjs && vite --config vite.config.example.js",
+    "example:build": "npm run build && node example/copy-neuroglancer-assets.mjs && vite build --config vite.config.example.js",
+    "prepublishOnly": "npm run build"
   },
   "author": "Jody Clements",
   "license": "MIT",
   "devDependencies": {
-    "@babel/cli": "^7.12.10",
-    "@babel/core": "^7.4.3",
-    "@babel/plugin-proposal-class-properties": "^7.4.4",
-    "@babel/preset-env": "^7.4.3",
-    "@babel/preset-react": "^7.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@vitejs/plugin-react": "^4.2.0",
     "babel-eslint": "^10.1.0",
-    "babel-jest": "^24.7.0",
     "eslint": "^7.7.0",
     "eslint-config-airbnb": "^18.2.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-jsx-a11y": "^6.3.1",
     "eslint-plugin-react": "^7.20.6",
-    "jest": "^24.7.0",
+    "jsdom": "^25.0.1",
     "prettier": "^2.5.1",
-    "react-test-renderer": "^16.8.6",
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.0"
-  },
-  "node": {
-    "fs": "empty"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^5.0.0",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
     "@janelia-flyem/neuroglancer": "^2.37.5"
