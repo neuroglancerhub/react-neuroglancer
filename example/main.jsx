@@ -18,7 +18,15 @@ const INITIAL_VIEWER_STATE = {
       source:
         "dvid://https://flyem.dvid.io/d925633ed0974da78e2bb5cf38d01f4d/segmentation",
     },
+    // Somewhere to draw annotations without needing a backing service, so the
+    // annotation tools are usable as soon as the example loads.
+    annotations: {
+      type: "annotation",
+      source: "local://annotations",
+      tool: "annotatePoint",
+    },
   },
+  selectedLayer: { layer: "annotations", visible: true },
   navigation: { zoomFactor: 8 },
 };
 
