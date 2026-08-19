@@ -18,25 +18,27 @@ EXAMPLE_TARGET=src npm run example
 ## How it finds neuroglancer
 
 The app imports `@janelia-flyem/react-neuroglancer`, which imports
-`@janelia-flyem/neuroglancer/janelia`. Older builds of the fork have no
-`./janelia` export, so `vite.config.example.js` checks the installed copy and,
-when the export is missing, aliases the specifier (and its stylesheet) straight
-to `dist/module/main.js` and `dist/module/main.css`. Once the fork ships the
-export the alias drops out on its own.
+`@janelia-flyem/neuroglancer/janelia`. The fork resolves that subpath through
+its own `exports` map, straight to TypeScript source, and vite compiles it
+along with everything else. `vite.config.example.js` still carries an alias for
+older installs of the fork that predate the `./janelia` export; it drops out on
+its own when the export is present.
 
-That means the fork checkout has to have been built with `npm run build:lib-janelia`.
+Because the fork is usually a symlink to a checkout outside this repo, the
+config adds its real path to `server.fs.allow`.
 
 ## Workers
 
-`copy-neuroglancer-assets.mjs` runs before vite and copies neuroglancer's worker
-bundles into `example/public/assets/`. The prebuilt neuroglancer bundle asks for
-its chunk worker by a path frozen at *its* build time
-(`/assets/chunk_worker.bundle-<hash>.js`), and that worker in turn loads
-`./async_computation.bundle.js` as a sibling, so both have to be sitting there
-under the names they are asked for. The script re-reads those names each run, so
-rebuilding the fork does not break it.
+Nothing to do. Neuroglancer spawns its workers with
+`new Worker(new URL(..., import.meta.url))`, so vite finds them, bundles them
+and emits hashed assets next to the app - `chunk_worker.bundle-<hash>.js`,
+`async_computation.bundle-<hash>.js` - along with the wasm codecs.
 
-`example/public/assets/` and `example/dist/` are generated; both are gitignored.
+One requirement: the chunk worker dynamically imports its codecs, so its bundle
+has to be code-split, which vite's default worker format (`iife`) cannot do.
+`vite.config.example.js` sets `worker.format` to `"es"`.
+
+`example/dist/` is generated and gitignored.
 
 ## Testing against a real app
 

@@ -21,8 +21,8 @@
     "test:watch": "vitest",
     "build": "vite build",
     "dev": "vite build --watch",
-    "example": "npm run build && node example/copy-neuroglancer-assets.mjs && vite --config vite.config.example.js",
-    "example:build": "npm run build && node example/copy-neuroglancer-assets.mjs && vite build --config vite.config.example.js",
+    "example": "npm run build && vite --config vite.config.example.js",
+    "example:build": "npm run build && vite build --config vite.config.example.js",
     "prepublishOnly": "npm run build"
   },
   "author": "Jody Clements",

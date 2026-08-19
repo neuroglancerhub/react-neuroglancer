@@ -63,6 +63,12 @@ export default defineConfig({
       allow: [repoRoot, realpathSync(neuroglancerRoot)],
     },
   },
+  // Neuroglancer's chunk worker dynamically imports its codecs, so the worker
+  // bundle has to be code-split. Vite's default worker format, iife, cannot do
+  // that.
+  worker: {
+    format: "es",
+  },
   build: {
     outDir: resolve(repoRoot, "example/dist"),
     emptyOutDir: true,
