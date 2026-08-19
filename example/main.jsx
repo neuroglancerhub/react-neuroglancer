@@ -20,9 +20,23 @@ const INITIAL_VIEWER_STATE = {
     },
     // Somewhere to draw annotations without needing a backing service, so the
     // annotation tools are usable as soon as the example loads.
+    //
+    // The dimensions are given explicitly: a bare "local://annotations" source
+    // takes its transform from the global coordinate space, which is still
+    // empty while the dvid layers above are loading, and annotations drawn into
+    // a layer created that early never render.
     annotations: {
       type: "annotation",
-      source: "local://annotations",
+      source: {
+        url: "local://annotations",
+        transform: {
+          outputDimensions: {
+            x: [8e-9, "m"],
+            y: [8e-9, "m"],
+            z: [8e-9, "m"],
+          },
+        },
+      },
       tool: "annotatePoint",
     },
   },
