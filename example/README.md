@@ -40,6 +40,25 @@ has to be code-split, which vite's default worker format (`iife`) cannot do.
 
 `example/dist/` is generated and gitignored.
 
+## Pushing state in from the host
+
+The `segments` row drives the segmentation layer from outside the viewer, the way
+neuPrintExplorer's body-id buttons do: type a body id, then `Add` or `Remove`.
+
+The two readouts are the test. `pushed` is what this app put into the `viewerState` prop;
+`viewer reports` is what came back through `onViewerStateChanged`. They should agree within a
+second of each click, in both directions. If `pushed` moves and `viewer reports` does not, the
+component is dropping the update.
+
+That is a regression worth guarding: the component decides whether to call `restoreState` by
+comparing serialised state, and host applications commonly build the next state by shallow-copying
+the previous one and editing a layer inside it. When that happens, both sides of the comparison
+point at the same mutated layer and the update is silently skipped. `withSegments` in `main.jsx`
+shows the shape a host should use - replace the layer, do not edit it.
+
+Clicking a segment in the viewer also adds it to `viewer reports`, so you can select one there and
+remove it from here to exercise the round trip without knowing a body id.
+
 ## Testing against a real app
 
 Closest simulation of publishing:
