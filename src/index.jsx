@@ -390,6 +390,7 @@ export default class Neuroglancer extends React.Component {
         delete newViewerState.crossSectionOrientation;
       }
       this.viewer.state.restoreState(newViewerState);
+      this.lastRestoredState = JSON.stringify(viewerState, bigintToStringReplacer);
     } else {
       this.viewer.state.restoreState({
         layers: {
@@ -437,16 +438,24 @@ export default class Neuroglancer extends React.Component {
     window.viewer = this.viewer;
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate() {
     const { viewerState } = this.props;
 
-    // Only restore state if viewerState prop has actually changed
-    // This prevents overwriting user interactions (like position changes) on unrelated re-renders
-    const stateChanged = viewerState
-      && JSON.stringify(viewerState, bigintToStringReplacer)
-        !== JSON.stringify(prevProps.viewerState, bigintToStringReplacer);
+    // Only restore when the state differs from what was last restored, so that
+    // unrelated re-renders do not overwrite the user's interactions.
+    //
+    // Compared against our own snapshot rather than prevProps, because callers
+    // commonly build the next state by shallow-copying the previous one and
+    // mutating a layer inside it. prevProps then points at the same mutated
+    // layer objects and compares equal, and the update is silently dropped.
+    const serializedState = viewerState
+      ? JSON.stringify(viewerState, bigintToStringReplacer)
+      : undefined;
+    const stateChanged = serializedState !== undefined
+      && serializedState !== this.lastRestoredState;
 
     if (stateChanged) {
+      this.lastRestoredState = serializedState;
       // The restoreState() call clears the "selected" (hovered on) segment, which is needed
       // by Neuroglancer's code to toggle segment visibilty on a mouse click.  To free the user
       // from having to move the mouse before clicking, save the selected segment and restore
