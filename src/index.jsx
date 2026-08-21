@@ -1,16 +1,26 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { AnnotationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/annotation/user_layer";
-import { getObjectColor } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_display_state/frontend";
-import { SegmentationUserLayer } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/segmentation_user_layer";
-import { serializeColor } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/color";
-import { setupDefaultViewer } from "@janelia-flyem/neuroglancer";
-import { Uint64 } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/uint64";
-import { urlSafeParse } from "@janelia-flyem/neuroglancer/dist/module/neuroglancer/util/json";
-import { encodeFragment } from '@janelia-flyem/neuroglancer/dist/module/neuroglancer/ui/url_hash_binding';
+import {
+  AnnotationUserLayer,
+  getObjectColor,
+  SegmentationUserLayer,
+  serializeColor,
+  setupMinimalViewer,
+  parseUint64,
+  urlSafeParse,
+  encodeFragment,
+} from "@janelia-flyem/neuroglancer/janelia";
 
 const viewersKeyed = {};
 let viewerNoKey;
+
+// Neuroglancer viewer state contains BigInt segment ids, which JSON.stringify
+// cannot serialize on its own; it throws "Do not know how to serialize a
+// BigInt". Neuroglancer applies the same conversion internally when it encodes
+// state into a URL fragment.
+function bigintToStringReplacer(key, value) {
+  return typeof value === "bigint" ? value.toString() : value;
+}
 
 // Adopted from neuroglancer/ui/url_hash_binding.ts
 export function parseUrlHash(url) {
@@ -44,7 +54,7 @@ export function getNeuroglancerViewerState(key) {
 
 export function getNeuroglancerColor(idStr, key) {
   try {
-    const id = Uint64.parseString(idStr);
+    const id = parseUint64(idStr);
     const v = key ? viewersKeyed[key] : viewerNoKey;
     if (v) {
       // eslint-disable-next-line no-restricted-syntax
@@ -320,12 +330,17 @@ export default class Neuroglancer extends React.Component {
       onViewerStateChanged,
       callbacks,
       ngServer,
-      key
+      key,
+      bundleRoot
     } = this.props;
-    this.viewer = setupDefaultViewer({
+
+    // bundleRoot tells neuroglancer where to find the worker files.
+    // When undefined, the bundler's native worker URL handling is used
+    // (e.g. Vite emits hashed worker assets automatically).
+    this.viewer = setupMinimalViewer({
       brainMapsClientId,
       target: this.ngContainer.current,
-      bundleRoot: "/"
+      bundleRoot,
     });
 
     this.setCallbacks(callbacks);
@@ -350,7 +365,9 @@ export default class Neuroglancer extends React.Component {
             return true;
           });
         }
-        return `${ngServer}/#!${encodeFragment(JSON.stringify(newState))}`;
+        return `${ngServer}/#!${encodeFragment(
+          JSON.stringify(newState, bigintToStringReplacer),
+        )}`;
       };
     }
     if (this.viewer.selectionDetailsState) {
@@ -373,6 +390,7 @@ export default class Neuroglancer extends React.Component {
         delete newViewerState.crossSectionOrientation;
       }
       this.viewer.state.restoreState(newViewerState);
+      this.lastRestoredState = JSON.stringify(viewerState, bigintToStringReplacer);
     } else {
       this.viewer.state.restoreState({
         layers: {
@@ -398,10 +416,11 @@ export default class Neuroglancer extends React.Component {
       if (onViewerStateChanged) {
         try {
           if (this.viewer.state.viewer.position) {
-            onViewerStateChanged(this.viewer.state.toJSON());
+            const json = this.viewer.state.toJSON();
+            onViewerStateChanged(json);
           }
         } catch (error) {
-          console.debug(error);
+          // Suppress toJSON errors - can happen during state transitions
         }
       }
     });
@@ -420,24 +439,43 @@ export default class Neuroglancer extends React.Component {
   }
 
   componentDidUpdate() {
-    // The restoreState() call clears the "selected" (hovered on) segment, which is needed
-    // by Neuroglancer's code to toggle segment visibilty on a mouse click.  To free the user
-    // from having to move the mouse before clicking, save the selected segment and restore
-    // it after restoreState().
-    const selectedSegments = {};
-    // eslint-disable-next-line no-restricted-syntax
-    for (const layer of this.viewer.layerManager.managedLayers) {
-      if (layer.layer instanceof SegmentationUserLayer) {
-        const { segmentSelectionState } = layer.layer.displayState;
-        selectedSegments[layer.name] = segmentSelectionState.selectedSegment;
-      }
-    }
-
     const { viewerState } = this.props;
-    if (viewerState) {
-      let newViewerState = { ...viewerState };
-      let restoreStates = [() => {
-        this.viewer.state.restoreState(newViewerState)
+
+    // Only restore when the state differs from what was last restored, so that
+    // unrelated re-renders do not overwrite the user's interactions.
+    //
+    // Compared against our own snapshot rather than prevProps, because callers
+    // commonly build the next state by shallow-copying the previous one and
+    // mutating a layer inside it. prevProps then points at the same mutated
+    // layer objects and compares equal, and the update is silently dropped.
+    const serializedState = viewerState
+      ? JSON.stringify(viewerState, bigintToStringReplacer)
+      : undefined;
+    const stateChanged = serializedState !== undefined
+      && serializedState !== this.lastRestoredState;
+
+    if (stateChanged) {
+      this.lastRestoredState = serializedState;
+      // The restoreState() call clears the "selected" (hovered on) segment, which is needed
+      // by Neuroglancer's code to toggle segment visibilty on a mouse click.  To free the user
+      // from having to move the mouse before clicking, save the selected segment and restore
+      // it after restoreState().
+      const selectedSegments = {};
+      // eslint-disable-next-line no-restricted-syntax
+      for (const layer of this.viewer.layerManager.managedLayers) {
+        if (layer.layer instanceof SegmentationUserLayer) {
+          const { segmentSelectionState } = layer.layer.displayState;
+          selectedSegments[layer.name] = segmentSelectionState.selectedSegment;
+        }
+      }
+
+      const newViewerState = { ...viewerState };
+      const restoreStates = [() => {
+        try {
+          this.viewer.state.restoreState(newViewerState);
+        } catch (error) {
+          console.warn('Error restoring viewer state:', error);
+        }
       }];
       if (viewerState.projectionScale === null) {
         delete newViewerState.projectionScale;
@@ -449,24 +487,24 @@ export default class Neuroglancer extends React.Component {
         delete newViewerState.crossSectionScale;
       }
       restoreStates.forEach(restore => restore());
-    }
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const layer of this.viewer.layerManager.managedLayers) {
-      if (layer.layer instanceof SegmentationUserLayer) {
-        const { segmentSelectionState } = layer.layer.displayState;
-        segmentSelectionState.set(selectedSegments[layer.name]);
+      // eslint-disable-next-line no-restricted-syntax
+      for (const layer of this.viewer.layerManager.managedLayers) {
+        if (layer.layer instanceof SegmentationUserLayer) {
+          const { segmentSelectionState } = layer.layer.displayState;
+          segmentSelectionState.set(selectedSegments[layer.name]);
+        }
       }
-    }
 
-    // For some reason setting position to an empty array doesn't reset
-    // the position in the viewer. This should handle those cases by looking
-    // for the empty position array and calling the position reset function if
-    // found.
-    if ('position' in viewerState) {
-      if (Array.isArray(viewerState.position)) {
-        if (viewerState.position.length === 0) {
-          this.viewer.position.reset();
+      // For some reason setting position to an empty array doesn't reset
+      // the position in the viewer. This should handle those cases by looking
+      // for the empty position array and calling the position reset function if
+      // found.
+      if ('position' in viewerState) {
+        if (Array.isArray(viewerState.position)) {
+          if (viewerState.position.length === 0) {
+            this.viewer.position.reset();
+          }
         }
       }
     }
@@ -478,6 +516,12 @@ export default class Neuroglancer extends React.Component {
       delete viewersKeyed[key];
     } else {
       viewerNoKey = undefined;
+    }
+
+    // Properly dispose of the viewer to clean up DOM elements and resources
+    if (this.viewer) {
+      this.viewer.dispose();
+      this.viewer = null;
     }
   }
 
@@ -640,6 +684,18 @@ Neuroglancer.propTypes = {
   key: PropTypes.string,
 
   /**
+   * Base path for the worker bundles. When unset, Neuroglancer uses the worker
+   * URLs baked into its own bundle. When set, workers are loaded from
+   * bundleRoot + "chunk_worker.bundle.js" and
+   * bundleRoot + "async_computation.bundle.js".
+   *
+   * Consuming apps must ensure those files are served at the specified path,
+   * for example by running:
+   *   npx neuroglancer-copy-workers public/
+   */
+  bundleRoot: PropTypes.string,
+
+  /**
    * An array of event bindings to change in Neuroglancer.  The array format is as follows:
    * [[old-event1, new-event1], [old-event2], old-event3]
    * Here, `old-event1`'s will be unbound and its action will be re-bound to `new-event1`.
@@ -692,4 +748,5 @@ Neuroglancer.defaultProps = {
   key: null,
   callbacks: [],
   ngServer: 'https://neuroglancer-demo.appspot.com/',
+  bundleRoot: undefined,
 };
