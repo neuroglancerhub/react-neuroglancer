@@ -7,8 +7,8 @@
  */
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { readFileSync, realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL(".", import.meta.url));
@@ -34,6 +34,25 @@ const janeliaAliases = neuroglancerExports["./janelia"]
       },
     ];
 
+// Vite finds the dependencies to pre-bundle by crawling the app's entry
+// points, but neuroglancer is excluded from that step below, so the crawl
+// stops at its door and its own dependencies are served raw. CommonJS ones
+// then fail in the browser: codemirror has no ESM default export, so the
+// shader widget dies with "does not provide an export named 'default'".
+// Naming neuroglancer's bundle entry points here lets vite reach them anyway.
+// This mirrors the consumer config in neuroglancer's examples/vite.
+const neuroglancerEntryDir = ["lib", "src"]
+  .map((dir) => resolve(neuroglancerRoot, dir))
+  .find((dir) => existsSync(join(dir, "chunk_worker.bundle.js")));
+
+const exampleRoot = resolve(repoRoot, "example");
+const neuroglancerEntries = neuroglancerEntryDir
+  ? ["main", "async_computation", "chunk_worker"].map((name) =>
+      // Entries are resolved against the vite root, which is example/.
+      relative(exampleRoot, join(neuroglancerEntryDir, `${name}.bundle.js`)),
+    )
+  : [];
+
 const libraryEntry =
   process.env.EXAMPLE_TARGET === "src" ? "src/index.jsx" : "dist/index.js";
 
@@ -52,9 +71,15 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    // Neuroglancer is a large prebuilt bundle with its own workers; let vite
-    // serve it as-is rather than pre-bundling it.
+    entries: ["index.html", ...neuroglancerEntries],
+    // Neuroglancer refers to its workers with `new URL`, which esbuild cannot
+    // rewrite, so it must not be pre-bundled itself.
     exclude: ["@janelia-flyem/neuroglancer"],
+  },
+  esbuild: {
+    // Neuroglancer's TypeScript sources use decorators, which need es2022.
+    // Only matters when the package is linked to a checkout that ships src/.
+    target: "es2022",
   },
   server: {
     fs: {
