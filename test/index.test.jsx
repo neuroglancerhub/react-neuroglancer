@@ -141,6 +141,41 @@ describe('Neuroglancer component', () => {
     expect(viewerCalls.restoredStates.at(-1).position).toEqual([9, 9, 9]);
   });
 
+  it('does not restore state when the viewer\'s own reported state is fed back in', () => {
+    // neuPrintExplorer stores every reported state and passes it straight back as
+    // viewerState. Restoring it would clear and rebuild every layer, which loses the
+    // position in any scene whose coordinate space rank changes across the rebuild.
+    const onViewerStateChanged = vi.fn();
+    const { rerender } = render(
+      <Neuroglancer viewerState={{ position: [9, 9, 9] }} onViewerStateChanged={onViewerStateChanged} />,
+    );
+
+    window.viewer.state.changed.dispatch();
+    const reported = onViewerStateChanged.mock.calls[0][0];
+    const restoreCount = viewerCalls.restoredStates.length;
+
+    rerender(<Neuroglancer viewerState={reported} onViewerStateChanged={onViewerStateChanged} />);
+
+    expect(viewerCalls.restoredStates).toHaveLength(restoreCount);
+  });
+
+  it('still restores a caller-initiated change made after a reported state', () => {
+    const onViewerStateChanged = vi.fn();
+    const { rerender } = render(<Neuroglancer onViewerStateChanged={onViewerStateChanged} />);
+
+    window.viewer.state.changed.dispatch();
+    const reported = onViewerStateChanged.mock.calls[0][0];
+
+    rerender(
+      <Neuroglancer
+        viewerState={{ ...reported, layout: '3d' }}
+        onViewerStateChanged={onViewerStateChanged}
+      />,
+    );
+
+    expect(viewerCalls.restoredStates.at(-1).layout).toBe('3d');
+  });
+
   it('disposes the viewer and forgets it on unmount', () => {
     const { unmount } = render(<Neuroglancer />);
 

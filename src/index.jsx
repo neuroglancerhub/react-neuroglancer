@@ -417,6 +417,15 @@ export default class Neuroglancer extends React.Component {
         try {
           if (this.viewer.state.viewer.position) {
             const json = this.viewer.state.toJSON();
+            // Record the state we are about to emit. Callers commonly store it and
+            // feed it straight back in as the viewerState prop; without this,
+            // componentDidUpdate sees the echo as an external change and calls
+            // restoreState(), which clears and rebuilds every layer. Scenes whose
+            // global coordinate space gains a dimension from a layer, rather than
+            // from the top-level "dimensions", never reach a fixed point that way:
+            // the rank changes across the rebuild and neuroglancer silently
+            // discards the position on the mismatch.
+            this.lastRestoredState = JSON.stringify(json, bigintToStringReplacer);
             onViewerStateChanged(json);
           }
         } catch (error) {
